@@ -1,7 +1,7 @@
 Thanks for contributing to warden.wz.
 
-This repository has focused pull request templates. Please use the one that best
-matches your change:
+This default template only points to the focused pull request templates. Please
+use the one that best matches your change:
 
 - Feature:
   - Template file:
@@ -17,12 +17,4 @@ matches your change:
   - Query parameter: `?template=documentation.md`
 
 To use one, reopen this pull request with the matching `?template=...` value in
-the URL.
-
-If you continue with this form, please include:
-
-### Summary
-
-### Tests
-
-### Compatibility
+the URL and replace this placeholder body with the selected template.
