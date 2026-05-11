@@ -18,3 +18,9 @@ use the one that best matches your change:
 
 To use one, reopen this pull request with the matching `?template=...` value in
 the URL and replace this placeholder body with the selected template.
+
+Example:
+
+```text
+https://github.com/sravioli/warden.wz/compare/<branch-name>?template=feature.md
+```
