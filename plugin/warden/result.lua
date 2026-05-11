@@ -66,11 +66,19 @@ end
 ---@return Warden.Result self
 function M:log(target)
   for i = 1, #self.issues do
-    logger.emit("error", string.format("[Warden] %s", self.issues[i].message), target)
+    logger.emit(
+      "error",
+      string.format("[Warden] %s: %s", self.issues[i].path_text, self.issues[i].message),
+      target
+    )
   end
 
   for i = 1, #self.warnings do
-    logger.emit("warn", string.format("[Warden] %s", self.warnings[i].message), target)
+    logger.emit(
+      "warn",
+      string.format("[Warden] %s: %s", self.warnings[i].path_text, self.warnings[i].message),
+      target
+    )
   end
 
   return self

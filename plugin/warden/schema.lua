@@ -72,6 +72,16 @@ local function resolve_default(default)
   return clone(default)
 end
 
+---@param value any
+---@return any
+local function measurable(value)
+  if type(value) == "string" or type(value) == "table" then
+    return #value
+  end
+
+  return value
+end
+
 ---@param kind string
 ---@param validator function
 ---@return Warden.Schema
@@ -166,7 +176,7 @@ end
 ---@return Warden.Schema self
 function M:min(min)
   return self:_check("too_small", function(value)
-    return value >= min
+    return measurable(value) >= min
   end, string.format("Expected value >= %s", tostring(min)), ">=" .. tostring(min))
 end
 
@@ -174,7 +184,7 @@ end
 ---@return Warden.Schema self
 function M:max(max)
   return self:_check("too_big", function(value)
-    return value <= max
+    return measurable(value) <= max
   end, string.format("Expected value <= %s", tostring(max)), "<=" .. tostring(max))
 end
 

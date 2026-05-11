@@ -20,6 +20,18 @@ local function invalid_type(ctx, path, code, expected, received)
   })
 end
 
+---@param values any[]
+---@return string
+local function join_values(values)
+  local parts = {}
+
+  for i = 1, #values do
+    parts[i] = tostring(values[i])
+  end
+
+  return table.concat(parts, ", ")
+end
+
 ---@return Warden.Schema
 function M.any()
   return schema.new("any", function(_, value)
@@ -183,7 +195,7 @@ function M.enum(values)
     schema._add_issue(ctx, "error", {
       code = "invalid_enum_value",
       path = path,
-      message = "Expected one of: " .. table.concat(values, ", "),
+      message = "Expected one of: " .. join_values(values),
       expected = values,
       received = value,
     })

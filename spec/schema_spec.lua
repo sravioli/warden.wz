@@ -119,6 +119,7 @@ describe("warden schemas", function()
   it("supports enums, literals, arrays, unions, and refinements", function()
     local schema = warden.object {
       level = warden.enum { "info", "warn", "error" },
+      retries = warden.enum { 1, 2, 3 },
       marker = warden.literal "wezterm",
       labels = warden.array(warden.string():not_empty()),
       id = warden.union {
@@ -132,6 +133,7 @@ describe("warden schemas", function()
 
     local result = schema:safe_parse {
       level = "warn",
+      retries = 2,
       marker = "wezterm",
       labels = { "a", "b" },
       id = 2,
@@ -180,6 +182,7 @@ describe("warden schemas", function()
 
     assert.matches("Warden validation produced", result:summary(), 1, true)
     assert.matches("opacity", result:format(), 1, true)
+    assert.matches("opacity", messages[1], 1, true)
     assert.are.equal(2, #messages)
   end)
 end)
