@@ -19,10 +19,17 @@ local function bootstrap(name)
   for i = 1, #plugins do
     local p = plugins[i]
     if p.url:find(name, 1, true) then
-      local path_entry = p.plugin_dir .. sep .. "plugin" .. sep .. "?.lua"
-      if not package.path:find(path_entry, 1, true) then
-        package.path = package.path .. ";" .. path_entry
+      local entries = {
+        p.plugin_dir .. sep .. "plugin" .. sep .. "?.lua",
+        p.plugin_dir .. sep .. "plugin" .. sep .. "?" .. sep .. "init.lua",
+      }
+
+      for j = 1, #entries do
+        if not package.path:find(entries[j], 1, true) then
+          package.path = package.path .. ";" .. entries[j]
+        end
       end
+
       return
     end
   end
