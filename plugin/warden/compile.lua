@@ -61,6 +61,43 @@ local function apply_modifiers(schema, spec)
     schema:refine(spec.refine, spec.message)
   end
 
+  local key_rules = {
+    at_least_one = "at_least_one",
+    required_one_of = "required_one_of",
+    mutually_exclusive = "mutually_exclusive",
+    exactly_one_of = "exactly_one_of",
+  }
+
+  for field, method in pairs(key_rules) do
+    local rule = spec[field]
+    if rule then
+      if type(rule) == "table" and rule.keys then
+        schema[method](schema, rule.keys, rule.message)
+      else
+        schema[method](schema, rule)
+      end
+    end
+  end
+
+  if spec.when then
+    local whens = spec.when
+    if whens.field then
+      whens = { whens }
+    end
+
+    for i = 1, #whens do
+      local rule = whens[i]
+      local expected = rule.expected
+      if expected == nil and rule.equals ~= nil then
+        expected = rule.equals
+      end
+      schema:when(rule.field, expected, {
+        required = rule.required,
+        forbidden = rule.forbidden,
+      })
+    end
+  end
+
   return schema
 end
 

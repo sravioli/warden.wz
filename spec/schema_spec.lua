@@ -249,6 +249,80 @@ describe("warden schemas", function()
     assert.are.equal("leader", result.value.aliases[1])
   end)
 
+  it("validates object relationship rules", function()
+    local schema = warden
+      .object {
+        name = warden.string():optional(),
+        command = warden.string():optional(),
+        url = warden.string():optional(),
+        file = warden.string():optional(),
+      }
+      :at_least_one { "name", "command" }
+      :mutually_exclusive { "url", "file" }
+
+    local missing = schema:safe_parse {}
+    local conflict = schema:safe_parse {
+      name = "open",
+      url = "https://example.com",
+      file = "local.html",
+    }
+
+    assert.is_false(missing.ok)
+    assert.are.equal("at_least_one", missing.issues[1].code)
+    assert.is_false(conflict.ok)
+    assert.are.equal("mutually_exclusive", conflict.issues[1].code)
+  end)
+
+  it("validates exactly-one and conditional object rules", function()
+    local schema = warden
+      .object {
+        mode = warden.enum { "builtin", "custom" },
+        preset = warden.string():optional(),
+        path = warden.string():optional(),
+        generated = warden.boolean():optional(),
+      }
+      :exactly_one_of { "preset", "path" }
+      :when("mode", "custom", {
+        required = { "path" },
+        forbidden = { "generated" },
+      })
+
+    local result = schema:safe_parse {
+      mode = "custom",
+      preset = "default",
+      generated = true,
+    }
+
+    assert.is_false(result.ok)
+    assert.is_true(has_issue(result.issues, "conditional_required"))
+    assert.is_true(has_issue(result.issues, "conditional_forbidden"))
+  end)
+
+  it("compiles object relationship rules", function()
+    local schema = warden.compile {
+      type = "object",
+      fields = {
+        mode = { enum = { "builtin", "custom" } },
+        preset = { type = "string", optional = true },
+        path = { type = "string", optional = true },
+      },
+      required_one_of = { "preset", "path" },
+      when = {
+        field = "mode",
+        expected = "custom",
+        required = { "path" },
+      },
+    }
+
+    local result = schema:safe_parse {
+      mode = "custom",
+    }
+
+    assert.is_false(result.ok)
+    assert.is_true(has_issue(result.issues, "at_least_one"))
+    assert.is_true(has_issue(result.issues, "conditional_required"))
+  end)
+
   it("does not throw from safe_parse and does throw from parse", function()
     local schema = warden.object {
       opacity = warden.number():range(0, 1),

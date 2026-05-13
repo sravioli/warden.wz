@@ -22,6 +22,7 @@ M.__index = M
 ---@field _description string?
 ---@field _checks table[]
 ---@field _refinements table[]
+---@field _object_rules table[]
 ---@field _unknown string?
 local Schema = M
 
@@ -94,6 +95,42 @@ local function measurable(value)
   return value
 end
 
+local function key_list(keys)
+  if type(keys) ~= "table" then
+    return { keys }
+  end
+
+  local list = {}
+  for i = 1, #keys do
+    list[i] = keys[i]
+  end
+
+  return list
+end
+
+local function join_keys(keys)
+  local parts = {}
+
+  for i = 1, #keys do
+    parts[i] = tostring(keys[i])
+  end
+
+  return table.concat(parts, ", ")
+end
+
+local function present_keys(value, keys)
+  local present = {}
+
+  for i = 1, #keys do
+    local key = keys[i]
+    if value[key] ~= nil then
+      present[#present + 1] = key
+    end
+  end
+
+  return present
+end
+
 ---@param kind string
 ---@param validator function
 ---@return Warden.Schema
@@ -108,6 +145,7 @@ function M.new(kind, validator)
     _description = nil,
     _checks = {},
     _refinements = {},
+    _object_rules = {},
   }, Schema)
 end
 
@@ -165,6 +203,64 @@ function M:refine(fn, message_or_opts)
   end
 
   self._refinements[#self._refinements + 1] = refinement
+  return self
+end
+
+---@param keys any[]
+---@param message? string
+---@return Warden.Schema self
+function M:at_least_one(keys, message)
+  self._object_rules[#self._object_rules + 1] = {
+    kind = "at_least_one",
+    keys = key_list(keys),
+    message = message,
+  }
+  return self
+end
+
+---@param keys any[]
+---@param message? string
+---@return Warden.Schema self
+function M:required_one_of(keys, message)
+  return self:at_least_one(keys, message)
+end
+
+---@param keys any[]
+---@param message? string
+---@return Warden.Schema self
+function M:mutually_exclusive(keys, message)
+  self._object_rules[#self._object_rules + 1] = {
+    kind = "mutually_exclusive",
+    keys = key_list(keys),
+    message = message,
+  }
+  return self
+end
+
+---@param keys any[]
+---@param message? string
+---@return Warden.Schema self
+function M:exactly_one_of(keys, message)
+  self._object_rules[#self._object_rules + 1] = {
+    kind = "exactly_one_of",
+    keys = key_list(keys),
+    message = message,
+  }
+  return self
+end
+
+---@param field any
+---@param expected any
+---@param rules table
+---@return Warden.Schema self
+function M:when(field, expected, rules)
+  self._object_rules[#self._object_rules + 1] = {
+    kind = "when",
+    field = field,
+    expected = expected,
+    required = key_list(rules.required or {}),
+    forbidden = key_list(rules.forbidden or {}),
+  }
   return self
 end
 
@@ -278,6 +374,77 @@ local function run_checks(self, ctx, path, parsed, start_issues)
   end
 end
 
+local function run_object_rules(self, ctx, path, parsed, start_issues)
+  if #ctx.issues > start_issues or #self._object_rules == 0 or type(parsed) ~= "table" then
+    return
+  end
+
+  for i = 1, #self._object_rules do
+    local rule = self._object_rules[i]
+
+    if rule.kind == "at_least_one" then
+      local present = present_keys(parsed, rule.keys)
+      if #present == 0 then
+        add_issue(ctx, "error", {
+          code = "at_least_one",
+          path = path,
+          message = rule.message or "Expected at least one of: " .. join_keys(rule.keys),
+          expected = rule.keys,
+          received = present,
+        })
+      end
+    elseif rule.kind == "mutually_exclusive" then
+      local present = present_keys(parsed, rule.keys)
+      if #present > 1 then
+        add_issue(ctx, "error", {
+          code = "mutually_exclusive",
+          path = path,
+          message = rule.message or "Expected at most one of: " .. join_keys(rule.keys),
+          expected = rule.keys,
+          received = present,
+        })
+      end
+    elseif rule.kind == "exactly_one_of" then
+      local present = present_keys(parsed, rule.keys)
+      if #present ~= 1 then
+        add_issue(ctx, "error", {
+          code = "exactly_one_of",
+          path = path,
+          message = rule.message or "Expected exactly one of: " .. join_keys(rule.keys),
+          expected = rule.keys,
+          received = present,
+        })
+      end
+    elseif rule.kind == "when" and parsed[rule.field] == rule.expected then
+      for j = 1, #rule.required do
+        local key = rule.required[j]
+        if parsed[key] == nil then
+          add_issue(ctx, "error", {
+            code = "conditional_required",
+            path = issue.child_path(path, key),
+            message = string.format("Required when %s is %s", tostring(rule.field), tostring(rule.expected)),
+            expected = "present",
+            received = nil,
+          })
+        end
+      end
+
+      for j = 1, #rule.forbidden do
+        local key = rule.forbidden[j]
+        if parsed[key] ~= nil then
+          add_issue(ctx, "error", {
+            code = "conditional_forbidden",
+            path = issue.child_path(path, key),
+            message = string.format("Forbidden when %s is %s", tostring(rule.field), tostring(rule.expected)),
+            expected = "absent",
+            received = parsed[key],
+          })
+        end
+      end
+    end
+  end
+end
+
 ---@param value any
 ---@param ctx Warden.Context
 ---@param path any[]
@@ -310,6 +477,7 @@ function M:_parse(value, ctx, path, present)
   local start_warnings = #ctx.warnings
   local parsed = self._validator(self, value, ctx, path)
   run_checks(self, ctx, path, parsed, start_issues)
+  run_object_rules(self, ctx, path, parsed, start_issues)
   describe_new(ctx.issues, start_issues, self._description)
   describe_new(ctx.warnings, start_warnings, self._description)
 
