@@ -45,6 +45,41 @@ function M:summary()
   return "Warden validation produced " .. table.concat(parts, " and ")
 end
 
+local function format_issue(prefix, issue)
+  return string.format("%s[%s] %s", prefix, issue.path_text, issue.message)
+end
+
+local function append_union_branch_lines(lines, issue)
+  local details = issue.details
+  local branches = details and details.branches
+
+  if not branches then
+    return
+  end
+
+  for i = 1, #branches do
+    local branch = branches[i]
+    local branch_issues = branch.issues or {}
+
+    for j = 1, #branch_issues do
+      lines[#lines + 1] = format_issue(
+        string.format("  - option %s: ", tostring(branch.index or i)),
+        branch_issues[j]
+      )
+    end
+
+    if #branch_issues == 0 then
+      local branch_warnings = branch.warnings or {}
+      for j = 1, #branch_warnings do
+        lines[#lines + 1] = format_issue(
+          string.format("  - option %s warning: ", tostring(branch.index or i)),
+          branch_warnings[j]
+        )
+      end
+    end
+  end
+end
+
 ---@return string
 function M:format()
   local lines = { self:summary() }
@@ -52,6 +87,7 @@ function M:format()
   for i = 1, #self.issues do
     local issue = self.issues[i]
     lines[#lines + 1] = string.format("- [%s] %s", issue.path_text, issue.message)
+    append_union_branch_lines(lines, issue)
   end
 
   for i = 1, #self.warnings do

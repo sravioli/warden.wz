@@ -529,4 +529,26 @@ describe("warden schemas", function()
     assert.matches("opacity", messages[1], 1, true)
     assert.are.equal(2, #messages)
   end)
+
+  it("formats union branch details without changing flat issues", function()
+    local schema = warden.object {
+      id = warden.union {
+        warden.string():not_empty(),
+        warden.integer():min(1),
+      },
+    }
+
+    local result = schema:safe_parse {
+      id = 0,
+    }
+    local formatted = result:format()
+
+    assert.is_false(result.ok)
+    assert.are.equal(1, #result.issues)
+    assert.matches("- [id] Value did not match any union option", formatted, 1, true)
+    assert.matches("option 1", formatted, 1, true)
+    assert.matches("Expected string, got number", formatted, 1, true)
+    assert.matches("option 2", formatted, 1, true)
+    assert.matches("Expected value >= 1", formatted, 1, true)
+  end)
 end)
