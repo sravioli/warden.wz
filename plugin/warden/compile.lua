@@ -139,6 +139,12 @@ function M.compile(spec)
     compiled = types.table()
   elseif kind == "array" then
     compiled = types.array(M.compile(spec.items or { type = "any" }))
+  elseif kind == "tuple" then
+    local items = {}
+    for i = 1, #spec.items do
+      items[i] = M.compile(spec.items[i])
+    end
+    compiled = types.tuple(items)
   elseif kind == "map" then
     compiled = types.map(M.compile(spec.keys), M.compile(spec.values))
   elseif kind == "record" then

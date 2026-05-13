@@ -164,6 +164,42 @@ describe("warden schemas", function()
     assert.is_true(result.ok)
   end)
 
+  it("requires arrays to be dense sequences", function()
+    local schema = warden.array(warden.string())
+
+    local result = schema:safe_parse {
+      [1] = "left",
+      [3] = "right",
+      label = "ignored",
+    }
+
+    assert.is_false(result.ok)
+    assert.is_true(has_issue(result.issues, "sparse_array"))
+    assert.is_true(has_issue(result.issues, "invalid_array_key"))
+  end)
+
+  it("validates tuple positions exactly", function()
+    local schema = warden.tuple {
+      warden.string(),
+      warden.integer(),
+    }
+
+    local valid = schema:safe_parse { "leader", 1 }
+    local invalid = schema:safe_parse {
+      [1] = "leader",
+      [3] = true,
+      name = "extra",
+    }
+
+    assert.is_true(valid.ok)
+    assert.are.equal("leader", valid.value[1])
+    assert.are.equal(1, valid.value[2])
+    assert.is_false(invalid.ok)
+    assert.is_true(has_issue(invalid.issues, "required"))
+    assert.is_true(has_issue(invalid.issues, "unexpected_tuple_item"))
+    assert.is_true(has_issue(invalid.issues, "invalid_tuple_key"))
+  end)
+
   it("adds descriptions and union branch details to issues", function()
     local schema = warden.object {
       id = warden
@@ -247,6 +283,22 @@ describe("warden schemas", function()
     assert.is_true(result.ok)
     assert.are.equal("#7aa2f7", result.value.colors.primary)
     assert.are.equal("leader", result.value.aliases[1])
+  end)
+
+  it("compiles tuple schemas", function()
+    local schema = warden.compile {
+      type = "tuple",
+      items = {
+        { type = "string" },
+        { type = "integer" },
+      },
+    }
+
+    local result = schema:safe_parse { "workspace", 2 }
+
+    assert.is_true(result.ok)
+    assert.are.equal("workspace", result.value[1])
+    assert.are.equal(2, result.value[2])
   end)
 
   it("validates object relationship rules", function()

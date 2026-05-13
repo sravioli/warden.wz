@@ -32,6 +32,50 @@ local function join_values(values)
   return table.concat(parts, ", ")
 end
 
+local function is_positive_integer(value)
+  return type(value) == "number" and value >= 1 and value % 1 == 0
+end
+
+local function add_invalid_array_key(ctx, path, key)
+  schema._add_issue(ctx, "error", {
+    code = "invalid_array_key",
+    path = issue.child_path(path, key),
+    message = "Array keys must be positive integers",
+    expected = "positive integer key",
+    received = key,
+  })
+end
+
+local function validate_dense_array(ctx, path, value)
+  local max = 0
+  local present = {}
+
+  for key in pairs(value) do
+    if is_positive_integer(key) then
+      present[key] = true
+      if key > max then
+        max = key
+      end
+    else
+      add_invalid_array_key(ctx, path, key)
+    end
+  end
+
+  for i = 1, max do
+    if not present[i] then
+      schema._add_issue(ctx, "error", {
+        code = "sparse_array",
+        path = issue.child_path(path, i),
+        message = "Array entries must be contiguous",
+        expected = "present array item",
+        received = nil,
+      })
+    end
+  end
+
+  return max
+end
+
 ---@return Warden.Schema
 function M.any()
   return schema.new("any", function(_, value)
@@ -109,12 +153,68 @@ function M.array(item_schema)
     end
 
     local parsed = {}
+    local max = validate_dense_array(ctx, path, value)
 
-    for i = 1, #value do
+    for i = 1, max do
+      if value[i] ~= nil then
+        local child_path = issue.child_path(path, i)
+        local child, include = item_schema:_parse(value[i], ctx, child_path, true)
+        if include then
+          parsed[i] = child
+        end
+      end
+    end
+
+    return parsed
+  end)
+end
+
+---@param item_schemas Warden.Schema[]
+---@return Warden.Schema
+function M.tuple(item_schemas)
+  return schema.new("tuple", function(_, value, ctx, path)
+    if type(value) ~= "table" then
+      invalid_type(ctx, path, "invalid_type", "tuple", value)
+      return nil
+    end
+
+    local parsed = {}
+
+    for key in pairs(value) do
+      if not is_positive_integer(key) then
+        schema._add_issue(ctx, "error", {
+          code = "invalid_tuple_key",
+          path = issue.child_path(path, key),
+          message = "Tuple keys must be positive integers",
+          expected = "positive integer key",
+          received = key,
+        })
+      elseif key > #item_schemas then
+        schema._add_issue(ctx, "error", {
+          code = "unexpected_tuple_item",
+          path = issue.child_path(path, key),
+          message = "Tuple contains an unexpected item",
+          expected = #item_schemas,
+          received = key,
+        })
+      end
+    end
+
+    for i = 1, #item_schemas do
       local child_path = issue.child_path(path, i)
-      local child, include = item_schema:_parse(value[i], ctx, child_path, true)
-      if include then
-        parsed[i] = child
+      if value[i] == nil then
+        schema._add_issue(ctx, "error", {
+          code = "required",
+          path = child_path,
+          message = "Required tuple item is missing",
+          expected = "tuple item",
+          received = nil,
+        })
+      else
+        local child, include = item_schemas[i]:_parse(value[i], ctx, child_path, true)
+        if include then
+          parsed[i] = child
+        end
       end
     end
 

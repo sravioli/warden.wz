@@ -16,6 +16,7 @@ M.number = types.number
 M.integer = types.integer
 M.table = types.table
 M.array = types.array
+M.tuple = types.tuple
 M.map = types.map
 M.record = types.record
 M.object = types.object
