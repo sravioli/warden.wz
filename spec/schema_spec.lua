@@ -203,10 +203,10 @@ describe("warden schemas", function()
   it("adds descriptions and union branch details to issues", function()
     local schema = warden.object {
       id = warden
-        .union {
+        .union({
           warden.string():not_empty(),
           warden.integer():min(1),
-        }
+        })
         :describe "Plugin identifier",
     }
 
@@ -303,13 +303,13 @@ describe("warden schemas", function()
 
   it("validates object relationship rules", function()
     local schema = warden
-      .object {
+      .object({
         name = warden.string():optional(),
         command = warden.string():optional(),
         url = warden.string():optional(),
         file = warden.string():optional(),
-      }
-      :at_least_one { "name", "command" }
+      })
+      :at_least_one({ "name", "command" })
       :mutually_exclusive { "url", "file" }
 
     local missing = schema:safe_parse {}
@@ -327,13 +327,13 @@ describe("warden schemas", function()
 
   it("validates exactly-one and conditional object rules", function()
     local schema = warden
-      .object {
+      .object({
         mode = warden.enum { "builtin", "custom" },
         preset = warden.string():optional(),
         path = warden.string():optional(),
         generated = warden.boolean():optional(),
-      }
-      :exactly_one_of { "preset", "path" }
+      })
+      :exactly_one_of({ "preset", "path" })
       :when("mode", "custom", {
         required = { "path" },
         forbidden = { "generated" },

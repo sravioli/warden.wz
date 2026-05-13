@@ -38,12 +38,12 @@ function M.path_text(path)
     local segment = path[i]
     if type(segment) == "number" then
       parts[#parts + 1] = string.format("[%d]", segment)
-    elseif is_identifier(segment) and #parts == 0 then
-      parts[#parts + 1] = tostring(segment)
     elseif is_identifier(segment) then
-      parts[#parts + 1] = "." .. tostring(segment)
-    elseif #parts == 0 then
-      parts[#parts + 1] = quote_segment(segment)
+      if #parts == 0 then
+        parts[#parts + 1] = tostring(segment)
+      else
+        parts[#parts + 1] = "." .. tostring(segment)
+      end
     else
       parts[#parts + 1] = quote_segment(segment)
     end

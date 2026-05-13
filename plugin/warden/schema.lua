@@ -422,7 +422,11 @@ local function run_object_rules(self, ctx, path, parsed, start_issues)
           add_issue(ctx, "error", {
             code = "conditional_required",
             path = issue.child_path(path, key),
-            message = string.format("Required when %s is %s", tostring(rule.field), tostring(rule.expected)),
+            message = string.format(
+              "Required when %s is %s",
+              tostring(rule.field),
+              tostring(rule.expected)
+            ),
             expected = "present",
             received = nil,
           })
@@ -435,7 +439,11 @@ local function run_object_rules(self, ctx, path, parsed, start_issues)
           add_issue(ctx, "error", {
             code = "conditional_forbidden",
             path = issue.child_path(path, key),
-            message = string.format("Forbidden when %s is %s", tostring(rule.field), tostring(rule.expected)),
+            message = string.format(
+              "Forbidden when %s is %s",
+              tostring(rule.field),
+              tostring(rule.expected)
+            ),
             expected = "absent",
             received = parsed[key],
           })
