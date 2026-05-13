@@ -102,6 +102,10 @@ function M.compile(spec)
     compiled = types.table()
   elseif kind == "array" then
     compiled = types.array(M.compile(spec.items or { type = "any" }))
+  elseif kind == "map" then
+    compiled = types.map(M.compile(spec.keys), M.compile(spec.values))
+  elseif kind == "record" then
+    compiled = types.record(M.compile(spec.values))
   elseif kind == "object" or spec.fields then
     local fields = {}
     for name, field in pairs(spec.fields or {}) do

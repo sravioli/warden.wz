@@ -1,5 +1,15 @@
 local warden = require "warden.api"
 
+local function has_issue(issues, code)
+  for i = 1, #issues do
+    if issues[i].code == code then
+      return true
+    end
+  end
+
+  return false
+end
+
 describe("warden schemas", function()
   it("applies schema defaults without mutating user config", function()
     local schema = warden.object {
@@ -141,6 +151,69 @@ describe("warden schemas", function()
     }
 
     assert.is_true(result.ok)
+  end)
+
+  it("validates string-keyed records", function()
+    local schema = warden.record(warden.number():min(1))
+
+    local valid = schema:safe_parse {
+      left = 1,
+      right = 2,
+    }
+    local invalid = schema:safe_parse {
+      left = 0,
+      [1] = 2,
+    }
+
+    assert.is_true(valid.ok)
+    assert.are.equal(2, valid.value.right)
+    assert.is_false(invalid.ok)
+    assert.is_true(has_issue(invalid.issues, "too_small"))
+    assert.is_true(has_issue(invalid.issues, "invalid_type"))
+  end)
+
+  it("validates map keys and values", function()
+    local schema = warden.map(warden.number():min(1), warden.string():not_empty())
+
+    local result = schema:safe_parse {
+      [1] = "one",
+      [2] = "",
+      [0] = "zero",
+    }
+
+    assert.is_false(result.ok)
+    assert.is_true(has_issue(result.issues, "empty"))
+    assert.is_true(has_issue(result.issues, "too_small"))
+  end)
+
+  it("compiles record and map schemas", function()
+    local schema = warden.compile {
+      type = "object",
+      fields = {
+        colors = {
+          type = "record",
+          values = { type = "string", not_empty = true },
+        },
+        aliases = {
+          type = "map",
+          keys = { type = "integer", min = 1 },
+          values = { type = "string" },
+        },
+      },
+    }
+
+    local result = schema:safe_parse {
+      colors = {
+        primary = "#7aa2f7",
+      },
+      aliases = {
+        [1] = "leader",
+      },
+    }
+
+    assert.is_true(result.ok)
+    assert.are.equal("#7aa2f7", result.value.colors.primary)
+    assert.are.equal("leader", result.value.aliases[1])
   end)
 
   it("does not throw from safe_parse and does throw from parse", function()

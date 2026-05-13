@@ -122,6 +122,65 @@ function M.array(item_schema)
   end)
 end
 
+---@param key_schema Warden.Schema
+---@param value_schema Warden.Schema
+---@return Warden.Schema
+function M.map(key_schema, value_schema)
+  return schema.new("map", function(_, value, ctx, path)
+    if type(value) ~= "table" then
+      invalid_type(ctx, path, "invalid_type", "map", value)
+      return nil
+    end
+
+    local parsed = {}
+    local seen = {}
+
+    for key, child in pairs(value) do
+      local child_path = issue.child_path(path, key)
+      local key_ctx = {
+        issues = {},
+        warnings = {},
+        options = ctx.options,
+      }
+      local parsed_key = key_schema:_parse(key, key_ctx, child_path, true)
+
+      for i = 1, #key_ctx.issues do
+        ctx.issues[#ctx.issues + 1] = key_ctx.issues[i]
+      end
+
+      for i = 1, #key_ctx.warnings do
+        ctx.warnings[#ctx.warnings + 1] = key_ctx.warnings[i]
+      end
+
+      if #key_ctx.issues == 0 then
+        if seen[parsed_key] then
+          schema._add_issue(ctx, "error", {
+            code = "duplicate_key",
+            path = child_path,
+            message = string.format("Map key normalizes to duplicate key %s", tostring(parsed_key)),
+            expected = "unique normalized key",
+            received = key,
+          })
+        else
+          seen[parsed_key] = true
+          local parsed_child, include = value_schema:_parse(child, ctx, child_path, true)
+          if include then
+            parsed[parsed_key] = parsed_child
+          end
+        end
+      end
+    end
+
+    return parsed
+  end)
+end
+
+---@param value_schema Warden.Schema
+---@return Warden.Schema
+function M.record(value_schema)
+  return M.map(M.string(), value_schema)
+end
+
 ---@param fields table<string,Warden.Schema>
 ---@return Warden.Schema
 function M.object(fields)
