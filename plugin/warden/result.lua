@@ -98,9 +98,26 @@ function M:format()
   return table.concat(lines, "\n")
 end
 
+local function is_detailed_log(target)
+  return type(target) == "table" and target.detailed == true
+end
+
+local function log_detailed(self, target)
+  if #self.issues > 0 then
+    logger.emit("error", self:format(), target)
+  elseif #self.warnings > 0 then
+    logger.emit("warn", self:format(), target)
+  end
+end
+
 ---@param target? table
 ---@return Warden.Result self
 function M:log(target)
+  if is_detailed_log(target) then
+    log_detailed(self, target)
+    return self
+  end
+
   for i = 1, #self.issues do
     logger.emit(
       "error",

@@ -530,6 +530,80 @@ describe("warden schemas", function()
     assert.are.equal(2, #messages)
   end)
 
+  it("keeps default logging compact for union failures", function()
+    local messages = {}
+    local schema = warden.object {
+      id = warden.union {
+        warden.string():not_empty(),
+        warden.integer():min(1),
+      },
+    }
+
+    local result = schema:safe_parse {
+      id = 0,
+    }
+
+    result:log {
+      error = function(message)
+        messages[#messages + 1] = message
+      end,
+    }
+
+    assert.are.equal(1, #messages)
+    assert.matches("Value did not match any union option", messages[1], 1, true)
+    assert.not_matches("option 1", messages[1], 1, true)
+  end)
+
+  it("logs detailed union failures as one formatted error", function()
+    local messages = {}
+    local schema = warden.object {
+      id = warden.union {
+        warden.string():not_empty(),
+        warden.integer():min(1),
+      },
+    }
+
+    local result = schema:safe_parse {
+      id = 0,
+    }
+
+    result:log {
+      detailed = true,
+      error = function(message)
+        messages[#messages + 1] = message
+      end,
+    }
+
+    assert.are.equal(1, #messages)
+    assert.matches("Warden validation produced 1 error", messages[1], 1, true)
+    assert.matches("Value did not match any union option", messages[1], 1, true)
+    assert.matches("option 1", messages[1], 1, true)
+    assert.matches("option 2", messages[1], 1, true)
+  end)
+
+  it("logs warning-only detailed results as one formatted warning", function()
+    local messages = {}
+    local schema = warden.object {
+      enabled = warden.boolean():default(true),
+    }
+
+    local result = schema:safe_parse {
+      extra = "kept",
+    }
+
+    result:log {
+      detailed = true,
+      warn = function(message)
+        messages[#messages + 1] = message
+      end,
+    }
+
+    assert.is_true(result.ok)
+    assert.are.equal(1, #messages)
+    assert.matches("Warden validation produced 1 warning", messages[1], 1, true)
+    assert.matches("warning:extra", messages[1], 1, true)
+  end)
+
   it("formats union branch details without changing flat issues", function()
     local schema = warden.object {
       id = warden.union {
