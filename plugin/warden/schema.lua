@@ -62,6 +62,18 @@ local function add_issue(ctx, severity, spec)
   end
 end
 
+local function describe_new(items, start, description)
+  if not description then
+    return
+  end
+
+  for i = start + 1, #items do
+    if not items[i].description then
+      items[i].description = description
+    end
+  end
+end
+
 ---@param default any
 ---@return any
 local function resolve_default(default)
@@ -287,6 +299,7 @@ function M:_parse(value, ctx, path, present)
         message = "Required value is missing",
         expected = self._kind,
         received = nil,
+        description = self._description,
       })
 
       return nil, false
@@ -294,8 +307,11 @@ function M:_parse(value, ctx, path, present)
   end
 
   local start_issues = #ctx.issues
+  local start_warnings = #ctx.warnings
   local parsed = self._validator(self, value, ctx, path)
   run_checks(self, ctx, path, parsed, start_issues)
+  describe_new(ctx.issues, start_issues, self._description)
+  describe_new(ctx.warnings, start_warnings, self._description)
 
   return parsed, #ctx.issues == start_issues
 end

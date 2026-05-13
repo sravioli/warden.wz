@@ -286,6 +286,8 @@ end
 ---@return Warden.Schema
 function M.union(schemas)
   return schema.new("union", function(_, value, ctx, path)
+    local branches = {}
+
     for i = 1, #schemas do
       local branch_ctx = {
         issues = {},
@@ -300,6 +302,11 @@ function M.union(schemas)
         end
         return parsed
       end
+
+      branches[#branches + 1] = {
+        index = i,
+        issues = branch_ctx.issues,
+      }
     end
 
     schema._add_issue(ctx, "error", {
@@ -308,6 +315,9 @@ function M.union(schemas)
       message = "Value did not match any union option",
       expected = "union",
       received = value,
+      details = {
+        branches = branches,
+      },
     })
 
     return nil

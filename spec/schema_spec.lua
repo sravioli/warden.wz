@@ -63,6 +63,17 @@ describe("warden schemas", function()
     assert.are.equal("out_of_range", result.issues[1].code)
   end)
 
+  it("keeps path text unambiguous for keys containing dots", function()
+    local schema = warden.object {
+      ["window.opacity"] = warden.number(),
+    }
+
+    local result = schema:safe_parse {}
+
+    assert.is_false(result.ok)
+    assert.are.equal('["window.opacity"]', result.issues[1].path_text)
+  end)
+
   it("warns and keeps unknown keys by default", function()
     local schema = warden.object {
       enabled = warden.boolean():default(true),
@@ -151,6 +162,28 @@ describe("warden schemas", function()
     }
 
     assert.is_true(result.ok)
+  end)
+
+  it("adds descriptions and union branch details to issues", function()
+    local schema = warden.object {
+      id = warden
+        .union {
+          warden.string():not_empty(),
+          warden.integer():min(1),
+        }
+        :describe "Plugin identifier",
+    }
+
+    local result = schema:safe_parse {
+      id = false,
+    }
+
+    assert.is_false(result.ok)
+    assert.are.equal("invalid_union", result.issues[1].code)
+    assert.are.equal("Plugin identifier", result.issues[1].description)
+    assert.are.equal(2, #result.issues[1].details.branches)
+    assert.are.equal(1, result.issues[1].details.branches[1].index)
+    assert.are.equal("invalid_type", result.issues[1].details.branches[1].issues[1].code)
   end)
 
   it("validates string-keyed records", function()
