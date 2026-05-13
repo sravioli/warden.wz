@@ -252,8 +252,18 @@ Result helpers:
 | --- | --- |
 | `result:summary()` | Short status line. |
 | `result:format()` | Multi-line issue report. |
-| `result:log(logger?)` | Log errors and warnings. |
+| `result:log(logger_or_options?)` | Log errors and warnings. |
 | `result:throw()` | Throw when validation failed. |
+
+By default, `result:log()` emits compact one-line messages per error or warning.
+Pass `detailed = true` to emit one formatted block with the same detail as
+`result:format()`:
+
+```lua
+result:log {
+  detailed = true,
+}
+```
 
 Issue objects include:
 
