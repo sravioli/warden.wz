@@ -10,6 +10,16 @@ local function has_issue(issues, code)
   return false
 end
 
+local function has_issue_at(issues, code, path_text)
+  for i = 1, #issues do
+    if issues[i].code == code and issues[i].path_text == path_text then
+      return true
+    end
+  end
+
+  return false
+end
+
 describe("warden schemas", function()
   it("applies schema defaults without mutating user config", function()
     local schema = warden.object {
@@ -255,6 +265,74 @@ describe("warden schemas", function()
     assert.is_true(has_issue(result.issues, "too_small"))
   end)
 
+  it("reports duplicate normalized map keys", function()
+    local normalized_key = {
+      _parse = function()
+        return "shared"
+      end,
+    }
+    local schema = warden.map(normalized_key, warden.string())
+
+    local result = schema:safe_parse {
+      first = "one",
+      second = "two",
+    }
+
+    assert.is_false(result.ok)
+    assert.is_true(has_issue(result.issues, "duplicate_key"))
+  end)
+
+  it("propagates map key and value warnings", function()
+    local key = { id = "primary", extra = true }
+    local schema = warden.map(
+      warden.object {
+        id = warden.string(),
+      },
+      warden.object {
+        enabled = warden.boolean():default(true),
+      }
+    )
+
+    local result = schema:safe_parse {
+      [key] = {
+        unexpected = "kept",
+      },
+    }
+
+    assert.is_true(result.ok)
+    assert.are.equal(2, #result.warnings)
+    assert.is_true(has_issue(result.warnings, "unknown_key"))
+  end)
+
+  it("reports nested record, map, and tuple paths", function()
+    local schema = warden.object {
+      palette = warden.record(warden.number()),
+      aliases = warden.map(warden.integer(), warden.string()),
+      binding = warden.tuple {
+        warden.string(),
+        warden.integer(),
+      },
+    }
+
+    local result = schema:safe_parse {
+      palette = {
+        ["a.b"] = "blue",
+      },
+      aliases = {
+        [1] = false,
+      },
+      binding = {
+        "leader",
+        "two",
+      },
+    }
+
+    assert.is_false(result.ok)
+    assert.is_true(has_issue_at(result.issues, "invalid_type", 'palette["a.b"]'))
+    assert.is_true(has_issue_at(result.issues, "invalid_type", "aliases[1]"))
+    assert.is_true(has_issue_at(result.issues, "invalid_type", "binding[2]"))
+  end)
+
   it("compiles record and map schemas", function()
     local schema = warden.compile {
       type = "object",
@@ -344,6 +422,40 @@ describe("warden schemas", function()
       preset = "default",
       generated = true,
     }
+
+    assert.is_false(result.ok)
+    assert.is_true(has_issue(result.issues, "conditional_required"))
+    assert.is_true(has_issue(result.issues, "conditional_forbidden"))
+  end)
+
+  it("counts defaults as present for object relationship rules", function()
+    local schema = warden
+      .object({
+        preset = warden.string():default "default",
+        path = warden.string():optional(),
+      })
+      :at_least_one({ "preset", "path" })
+      :exactly_one_of { "preset", "path" }
+
+    local result = schema:safe_parse {}
+
+    assert.is_true(result.ok)
+    assert.are.equal("default", result.value.preset)
+  end)
+
+  it("evaluates conditional rules after defaults are applied", function()
+    local schema = warden
+      .object({
+        mode = warden.enum({ "builtin", "custom" }):default "custom",
+        path = warden.string():optional(),
+        generated = warden.boolean():default(true),
+      })
+      :when("mode", "custom", {
+        required = { "path" },
+        forbidden = { "generated" },
+      })
+
+    local result = schema:safe_parse {}
 
     assert.is_false(result.ok)
     assert.is_true(has_issue(result.issues, "conditional_required"))
