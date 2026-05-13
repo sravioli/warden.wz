@@ -90,7 +90,10 @@ Constructors:
 | `warden.number()` | Accept numbers. |
 | `warden.integer()` | Accept integer numbers. |
 | `warden.table()` | Accept tables and copy them. |
-| `warden.array(schema)` | Validate sequence values. |
+| `warden.array(schema)` | Validate dense sequence values. |
+| `warden.tuple(schemas)` | Validate fixed positional values. |
+| `warden.map(key_schema, value_schema)` | Validate arbitrary keyed tables. |
+| `warden.record(value_schema)` | Validate string-keyed tables. |
 | `warden.object(fields)` | Validate table fields. |
 | `warden.enum(values)` | Accept one value from a list. |
 | `warden.literal(value)` | Accept one exact value. |
@@ -107,6 +110,11 @@ Modifiers:
 | `:describe(text)` | Attach human-readable context. |
 | `:refine(fn, message?)` | Add a custom predicate. |
 | `:unknown(mode)` | Set object unknown-key behavior. |
+| `:at_least_one(keys, message?)` | Require at least one key. |
+| `:required_one_of(keys, message?)` | Alias for `:at_least_one()`. |
+| `:mutually_exclusive(keys, message?)` | Allow at most one key. |
+| `:exactly_one_of(keys, message?)` | Require exactly one key. |
+| `:when(field, value, rules)` | Require or forbid keys conditionally. |
 
 Constraints:
 
@@ -117,6 +125,49 @@ Constraints:
 | `:range(min, max)` | Inclusive numeric range. |
 | `:matches(pattern)` | Lua pattern match for strings. |
 | `:not_empty()` | Require non-empty strings, arrays, or tables. |
+
+## Tables, Records, and Tuples
+
+Use `record()` for plugin option maps with user-defined string keys:
+
+```lua
+local palette = warden.record(warden.string():not_empty())
+```
+
+Use `map()` when keys need their own schema:
+
+```lua
+local bindings = warden.map(warden.integer():min(1), warden.string())
+```
+
+`array()` validates dense `1..n` sequences. Sparse arrays and mixed tables are
+reported as validation errors. Use `tuple()` for fixed positional values:
+
+```lua
+local coordinate = warden.tuple {
+  warden.integer(),
+  warden.integer(),
+}
+```
+
+## Object Relationships
+
+Object schemas can describe relationships between fields:
+
+```lua
+local action = warden
+  .object {
+    mode = warden.enum { "builtin", "custom" },
+    preset = warden.string():optional(),
+    path = warden.string():optional(),
+    generated = warden.boolean():optional(),
+  }
+  :exactly_one_of { "preset", "path" }
+  :when("mode", "custom", {
+    required = { "path" },
+    forbidden = { "generated" },
+  })
+```
 
 ## Declarative Schemas
 
@@ -141,7 +192,22 @@ local schema = warden.compile {
     theme = {
       type = "string",
     },
+    palette = {
+      type = "record",
+      values = {
+        type = "string",
+        not_empty = true,
+      },
+    },
+    coordinate = {
+      type = "tuple",
+      items = {
+        { type = "integer" },
+        { type = "integer" },
+      },
+    },
   },
+  exactly_one_of = { "theme", "palette" },
 }
 ```
 
@@ -200,8 +266,14 @@ Issue objects include:
   expected = { min = 0, max = 1 },
   received = 1.5,
   severity = "error",
+  description = "Window opacity",
+  details = nil,
 }
 ```
+
+Union issues keep the top-level `invalid_union` issue flat and include branch
+failures in `issue.details.branches`. Descriptions from `:describe()` are copied
+onto issues produced by that schema.
 
 ## Assertion Helpers
 
