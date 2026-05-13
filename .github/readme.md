@@ -275,6 +275,16 @@ Union issues keep the top-level `invalid_union` issue flat and include branch
 failures in `issue.details.branches`. Descriptions from `:describe()` are copied
 onto issues produced by that schema.
 
+`result:format()` expands union details for review while preserving the flat
+`result.issues` list:
+
+```text
+Warden validation produced 1 error(s)
+- [id] Value did not match any union option
+  - option 1: [id] Expected string, got number
+  - option 2: [id] Expected value >= 1
+```
+
 ## Assertion Helpers
 
 The previous assertion utility is available as a lower-level helper:
