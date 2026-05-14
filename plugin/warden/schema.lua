@@ -8,22 +8,22 @@ local M = {}
 M.__index = M
 
 ---@class Warden.Context
----@field issues Warden.Issue[]
----@field warnings Warden.Issue[]
----@field options table
+---@field issues Warden.Issue[] Validation errors collected during parsing.
+---@field warnings Warden.Issue[] Non-fatal validation warnings collected during parsing.
+---@field options table Parse options for this run.
 
 ---@class Warden.Schema
----@field _kind string
----@field _validator function
----@field _optional boolean
----@field _nullable boolean
----@field _has_default boolean
----@field _default any
----@field _description string?
----@field _checks table[]
----@field _refinements table[]
----@field _object_rules table[]
----@field _unknown string?
+---@field _kind string Schema kind name.
+---@field _validator function Type-specific parser function.
+---@field _optional boolean Whether missing values are allowed.
+---@field _nullable boolean Whether explicit nil values are allowed.
+---@field _has_default boolean Whether this schema owns a default value.
+---@field _default any Schema-owned default value or default factory.
+---@field _description string? Human-readable schema description.
+---@field _checks table[] Built-in constraint checks.
+---@field _refinements table[] Custom refinement checks.
+---@field _object_rules table[] Object-level validation rules.
+---@field _unknown string? Unknown-key handling mode for object schemas.
 local Schema = M
 
 ---@param value any

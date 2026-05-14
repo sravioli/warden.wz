@@ -6,10 +6,10 @@ local M = {}
 M.__index = M
 
 ---@class Warden.Result
----@field ok boolean
----@field value any
----@field issues Warden.Issue[]
----@field warnings Warden.Issue[]
+---@field ok boolean Whether validation passed without errors.
+---@field value any Parsed value with defaults applied.
+---@field issues Warden.Issue[] Validation errors.
+---@field warnings Warden.Issue[] Non-fatal validation warnings.
 local Result = M
 
 ---@param ok boolean
