@@ -1,5 +1,6 @@
 # warden.wz
 
+<!-- [![Awesome](https://awesome.re/mentioned-badge.svg)](https://github.com/michaelbrusegard/awesome-wezterm) -->
 [![Tests](https://img.shields.io/github/actions/workflow/status/sravioli/warden.wz/tests.yaml?label=Tests&logo=Lua)](https://github.com/sravioli/warden.wz/actions?workflow=tests)
 [![Lint](https://img.shields.io/github/actions/workflow/status/sravioli/warden.wz/lint.yaml?label=Lint&logo=Lua)](https://github.com/sravioli/warden.wz/actions?workflow=lint)
 [![Coverage](https://img.shields.io/coverallsCoverage/github/sravioli/warden.wz?label=Coverage&logo=coveralls)](https://coveralls.io/github/sravioli/warden.wz)
@@ -29,6 +30,19 @@ local warden = wezterm.plugin.require(
   "file:///" .. wezterm.config_dir .. "/plugins/warden.wz"
 )
 ```
+
+<!--
+### Type annotations
+
+Warden ships LuaCATS annotations. After installing
+[wezterm-types](https://github.com/DrKJeff16/wezterm-types), annotate the import
+to get completion and type checking:
+
+```lua
+---@type Warden
+local warden = wezterm.plugin.require "https://github.com/sravioli/warden.wz"
+```
+-->
 
 ## Quick Start
 
@@ -98,6 +112,7 @@ Constructors:
 | `warden.enum(values)` | Accept one value from a list. |
 | `warden.literal(value)` | Accept one exact value. |
 | `warden.union(schemas)` | Accept the first matching schema. |
+| `warden.compile(spec)` | Compile a declarative schema table. |
 
 Modifiers:
 
