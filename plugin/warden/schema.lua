@@ -75,6 +75,19 @@ local function describe_new(items, start, description)
   end
 end
 
+local unknown_modes = {
+  keep = true,
+  warn = true,
+  error = true,
+  strip = true,
+}
+
+local function validate_unknown_mode(mode)
+  if not unknown_modes[mode] then
+    error("Unknown Warden unknown-key mode: " .. tostring(mode), 3)
+  end
+end
+
 ---@param default any
 ---@return any
 local function resolve_default(default)
@@ -88,8 +101,16 @@ end
 ---@param value any
 ---@return any
 local function measurable(value)
-  if type(value) == "string" or type(value) == "table" then
+  if type(value) == "string" then
     return #value
+  end
+
+  if type(value) == "table" then
+    local count = 0
+    for _ in pairs(value) do
+      count = count + 1
+    end
+    return count
   end
 
   return value
@@ -185,6 +206,7 @@ end
 ---@param mode "keep"|"warn"|"error"|"strip"
 ---@return Warden.Schema self
 function M:unknown(mode)
+  validate_unknown_mode(mode)
   self._unknown = mode
   return self
 end
@@ -324,7 +346,7 @@ end
 ---@return Warden.Schema self
 function M:not_empty()
   return self:_check("empty", function(value)
-    return #value > 0
+    return measurable(value) > 0
   end, "Expected value to be non-empty", "non-empty")
 end
 
@@ -360,7 +382,7 @@ local function run_checks(self, ctx, path, parsed, start_issues)
     local refinement = self._refinements[i]
     local ok, passed_or_message = pcall(refinement.fn, parsed)
 
-    if not ok or passed_or_message == false or type(passed_or_message) == "string" then
+    if not ok or not passed_or_message or type(passed_or_message) == "string" then
       add_issue(ctx, "error", {
         code = refinement.code or "custom",
         path = path,
@@ -496,6 +518,10 @@ end
 ---@param options? table
 ---@return Warden.Result
 function M:safe_parse(value, options)
+  if options and options.unknown ~= nil then
+    validate_unknown_mode(options.unknown)
+  end
+
   local ctx = {
     issues = {},
     warnings = {},

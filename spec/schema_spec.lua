@@ -73,6 +73,17 @@ describe("warden schemas", function()
     assert.are.equal("out_of_range", result.issues[1].code)
   end)
 
+  it("measures tables by key count for size constraints", function()
+    local non_empty = warden.table():not_empty():safe_parse { named = true }
+    local min_size = warden.table():min(2):safe_parse { first = true, second = true }
+    local max_size = warden.table():max(1):safe_parse { first = true, second = true }
+
+    assert.is_true(non_empty.ok)
+    assert.is_true(min_size.ok)
+    assert.is_false(max_size.ok)
+    assert.are.equal("too_big", max_size.issues[1].code)
+  end)
+
   it("keeps path text unambiguous for keys containing dots", function()
     local schema = warden.object {
       ["window.opacity"] = warden.number(),
@@ -114,6 +125,16 @@ describe("warden schemas", function()
     assert.are.equal(1, #warn:safe_parse(input).warnings)
     assert.is_nil(strip:safe_parse(input).value.extra)
     assert.is_false(err:safe_parse(input).ok)
+  end)
+
+  it("rejects invalid unknown key policies", function()
+    assert.has_error(function()
+      warden.object({}):unknown "erorr"
+    end, "Unknown Warden unknown-key mode: erorr")
+
+    assert.has_error(function()
+      warden.object({}):safe_parse({}, { unknown = "erorr" })
+    end, "Unknown Warden unknown-key mode: erorr")
   end)
 
   it("compiles declarative schemas to the same behavior as builder schemas", function()
@@ -174,6 +195,19 @@ describe("warden schemas", function()
     assert.is_true(result.ok)
   end)
 
+  it("rejects refinements that return nil", function()
+    local schema = warden.string():refine(function()
+      return nil
+    end)
+
+    local result = schema:safe_parse "value"
+
+    assert.is_false(result.ok)
+    assert.are.equal(1, #result.issues)
+    assert.are.equal("custom", result.issues[1].code)
+    assert.are.equal("Value failed custom validation", result.issues[1].message)
+  end)
+
   it("requires arrays to be dense sequences", function()
     local schema = warden.array(warden.string())
 
@@ -186,6 +220,17 @@ describe("warden schemas", function()
     assert.is_false(result.ok)
     assert.is_true(has_issue(result.issues, "sparse_array"))
     assert.is_true(has_issue(result.issues, "invalid_array_key"))
+  end)
+
+  it("checks sparse arrays without scanning missing indexes", function()
+    local result = warden.array(warden.any()):safe_parse {
+      [2 ^ 40] = "far away",
+    }
+
+    assert.is_false(result.ok)
+    assert.are.equal(1, #result.issues)
+    assert.are.equal("sparse_array", result.issues[1].code)
+    assert.are.equal("[1]", result.issues[1].path_text)
   end)
 
   it("validates tuple positions exactly", function()
@@ -263,6 +308,16 @@ describe("warden schemas", function()
     assert.is_false(result.ok)
     assert.is_true(has_issue(result.issues, "empty"))
     assert.is_true(has_issue(result.issues, "too_small"))
+  end)
+
+  it("preserves fractional numeric keys in issue paths", function()
+    local result = warden.map(warden.string(), warden.any()):safe_parse {
+      [1.5] = "value",
+    }
+
+    assert.is_false(result.ok)
+    assert.are.equal(1.5, result.issues[1].path[1])
+    assert.are.equal("[1.5]", result.issues[1].path_text)
   end)
 
   it("reports duplicate normalized map keys", function()

@@ -37,7 +37,11 @@ function M.path_text(path)
   for i = 1, #path do
     local segment = path[i]
     if type(segment) == "number" then
-      parts[#parts + 1] = string.format("[%d]", segment)
+      local text = tostring(segment)
+      if segment % 1 == 0 then
+        text = text:gsub("%.0$", "")
+      end
+      parts[#parts + 1] = "[" .. text .. "]"
     elseif is_identifier(segment) then
       if #parts == 0 then
         parts[#parts + 1] = tostring(segment)

@@ -200,12 +200,12 @@ function M:_get_type(value)
     return type(value)
   end
 
-  local key = tostring(value)
-  if not self._type_cache[key] then
-    self._type_cache[key] = type(value)
+  local value_type = type(value)
+  if not self._type_cache[value_type] then
+    self._type_cache[value_type] = value_type
   end
 
-  return self._type_cache[key]
+  return self._type_cache[value_type]
 end
 
 function M:throw()
@@ -377,7 +377,7 @@ end
 function M._str:ends_with(str, suffix, message)
   message = message or string.format("String '%s' does not end with '%s'", tostring(str), suffix)
   self._parent:_check(
-    type(str) == "string" and str:sub(-#suffix) == suffix,
+    type(str) == "string" and (suffix == "" or str:sub(-#suffix) == suffix),
     message,
     3,
     self._group

@@ -47,22 +47,20 @@ local function add_invalid_array_key(ctx, path, key)
 end
 
 local function validate_dense_array(ctx, path, value)
-  local max = 0
-  local present = {}
+  local indexes = {}
 
   for key in pairs(value) do
     if is_positive_integer(key) then
-      present[key] = true
-      if key > max then
-        max = key
-      end
+      indexes[#indexes + 1] = key
     else
       add_invalid_array_key(ctx, path, key)
     end
   end
 
-  for i = 1, max do
-    if not present[i] then
+  table.sort(indexes)
+
+  for i = 1, #indexes do
+    if indexes[i] ~= i then
       schema._add_issue(ctx, "error", {
         code = "sparse_array",
         path = issue.child_path(path, i),
@@ -70,10 +68,11 @@ local function validate_dense_array(ctx, path, value)
         expected = "present array item",
         received = nil,
       })
+      break
     end
   end
 
-  return max
+  return indexes
 end
 
 ---@return Warden.Schema
@@ -153,15 +152,14 @@ function M.array(item_schema)
     end
 
     local parsed = {}
-    local max = validate_dense_array(ctx, path, value)
+    local indexes = validate_dense_array(ctx, path, value)
 
-    for i = 1, max do
-      if value[i] ~= nil then
-        local child_path = issue.child_path(path, i)
-        local child, include = item_schema:_parse(value[i], ctx, child_path, true)
-        if include then
-          parsed[i] = child
-        end
+    for i = 1, #indexes do
+      local index = indexes[i]
+      local child_path = issue.child_path(path, index)
+      local child, include = item_schema:_parse(value[index], ctx, child_path, true)
+      if include then
+        parsed[index] = child
       end
     end
 
