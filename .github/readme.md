@@ -57,17 +57,18 @@ local schema = warden.object {
 }
 
 local result = schema:safe_parse(user_config)
+result:log()
 
-if not result.ok then
-  result:log()
+if result.ok then
+  local config = result.value
+  -- Use the validated config.
 end
-
-local config = result.value
 ```
 
 `config.window.opacity` is present even when the user omits it. `theme` is
 required because it has no default and is not marked optional. `title` may be
-absent.
+absent. `result.ok` can be true when warnings exist; `result:log()` reports
+those warnings. Only use `result.value` when `result.ok` is true.
 
 ## Core Ideas
 
@@ -254,6 +255,9 @@ end
 
 result:log()
 ```
+
+`schema:validate(value, options)` is an alias for
+`schema:safe_parse(value, options)`.
 
 Use `parse()` when invalid input should stop immediately:
 
