@@ -49,9 +49,9 @@ You need:
 3. To test the plugin locally, point your WezTerm config at the checkout:
 
    ```lua
-   local warden = wezterm.plugin.require(
-     "file:///" .. wezterm.config_dir .. "/plugins/warden.wz"
-   )
+   local root = wezterm.home_dir .. "/path/to/warden.wz/plugin/"
+   package.path = root .. "?.lua;" .. root .. "?/init.lua;" .. package.path
+   local warden = require "warden.api"
    ```
 
 4. Run the checks to confirm the setup works:

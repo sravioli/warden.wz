@@ -306,14 +306,14 @@ with the schema, sanitized input, plugin revision, and `result:format()` output.
 
 ### Local checkout
 
-Clone into `plugins/warden.wz` beneath `wezterm.config_dir`, then replace
-the remote import:
+Load the working tree directly, so edits take effect on the next config
+reload without a commit or a plugin update. Adjust the path to your clone:
 
 ```lua
 local wezterm = require "wezterm"
-local warden = wezterm.plugin.require(
-  "file:///" .. wezterm.config_dir .. "/plugins/warden.wz"
-)
+local root = wezterm.home_dir .. "/path/to/warden.wz/plugin/"
+package.path = root .. "?.lua;" .. root .. "?/init.lua;" .. package.path
+local warden = require "warden.api"
 ```
 
 ### Editor support
