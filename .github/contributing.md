@@ -1,52 +1,145 @@
 # warden.wz Contributing Guide
 
-Thank you for taking the time to improve warden.wz.
+Thanks for helping improve warden.wz. This guide covers what we accept, how to set up a checkout, and how a change gets merged.
 
-Warden is a schema validation library for WezTerm plugin and configuration
-tables. Contributions should keep that scope tight: validate input, normalize
-defaults, report clear issues, and avoid surprising side effects.
+We accept the following types of contributions:
 
-## What We Accept
+- Source code: bug fixes, new features, and improvements to schema validation, result reporting, or assertion helpers. See [Environment setup](#environment-setup), [Best practices](#best-practices), and [Contribution workflow](#contribution-workflow).
+- Documentation: improvements to the README, inline LuaLS annotations, or issue templates. See [Text formats](#text-formats).
+- Bug reports: reproducible issues filed through the [bug report template](ISSUE_TEMPLATE/bug_report.md). See [Report issues and bugs](#report-issues-and-bugs).
 
-- Bug fixes for schema validation, result reporting, or assertion helpers.
-- New schema constructors or constraints that are useful for WezTerm plugin
-  configuration.
-- Documentation improvements for configuration validation workflows.
-- Tests that cover real plugin-author usage.
+We do not accept translations or social media and outreach contributions.
 
-At this time, Warden does not aim to be a full Zod clone. Features such as async
-validation, codecs, JSON Schema export, or static type inference should start as
-a discussion before implementation.
+## Overview
 
-## Local Setup
+warden.wz is a schema validation library for [WezTerm](https://wezfurlong.org/wezterm/) plugin and configuration tables. See the [README](readme.md) for usage details.
 
-Clone the repository and install the Lua tooling used by the checks:
+## Ground rules
 
-```sh
-git clone https://github.com/sravioli/warden.wz.git
-cd warden.wz
+Read the [Code of Conduct](code_of_conduct.md) before contributing.
+
+## Share ideas
+
+To propose a new idea:
+
+1. Check existing [issues](https://github.com/sravioli/warden.wz/issues) to avoid duplicates.
+2. Open a new issue describing the idea, its motivation, and, if applicable, a rough implementation approach.
+3. Wait for feedback from a maintainer before starting work.
+
+## Before you start
+
+You need:
+
+- A [GitHub account](https://docs.github.com/en/get-started/signing-up-for-github/signing-up-for-a-new-github-account)
+- [Git](https://git-scm.com/)
+- [WezTerm](https://wezfurlong.org/wezterm/installation.html), to test changes
+- [Busted](https://lunarmodules.github.io/busted/) and [luacheck](https://github.com/lunarmodules/luacheck), installed with LuaRocks
+- [StyLua](https://github.com/JohnnyMorganz/StyLua) and [Selene](https://kampfkarren.github.io/selene/)
+
+## Environment setup
+
+1. Fork the repository on GitHub.
+2. Clone your fork:
+
+   ```sh
+   git clone https://github.com/<your-username>/warden.wz.git
+   cd warden.wz
+   ```
+
+3. To test the plugin locally, point your WezTerm config at the checkout:
+
+   ```lua
+   local warden = wezterm.plugin.require(
+     "file:///" .. wezterm.config_dir .. "/plugins/warden.wz"
+   )
+   ```
+
+4. Run the checks to confirm the setup works:
+
+   ```sh
+   busted --verbose
+   luacheck plugin spec
+   selene --display-style=quiet plugin
+   stylua --check plugin spec
+   ```
+
+## Best practices
+
+- Keep each commit focused on a single change.
+- Run `stylua plugin spec` before committing. The project uses 2-space indentation, Unix (LF) line endings, double quotes, and omitted call parentheses where safe. See [`stylua.toml`](../stylua.toml).
+- Leave `require` ordering to StyLua; `sort_requires` is enabled.
+- Update or add `---@class`, `---@field`, `---@param`, and `---@return` annotations when changing public APIs. They live inline under `plugin/`.
+- Add or update Busted tests in `spec/` when you change public behavior. Bug fixes need a regression test.
+
+## Contribution workflow
+
+### Fork and clone
+
+See [Environment setup](#environment-setup). For a general guide to the fork-and-branch workflow, read [Using the Fork-and-Branch Git Workflow](https://blog.scottlowe.org/2015/01/27/using-fork-branch-git-workflow/).
+
+### Report issues and bugs
+
+Use the [bug report template](ISSUE_TEMPLATE/bug_report.md). Include your OS, WezTerm version, warden.wz version or commit, relevant configuration code, and steps to reproduce the bug.
+
+### Commit messages
+
+This project uses [Conventional Commits](https://www.conventionalcommits.org/) enforced by [Cocogitto](https://docs.cocogitto.io/). Every commit message must follow this format:
+
+```text
+<type>[(scope)]: <description>
 ```
 
-The test suite uses Busted. Linting uses luacheck, Selene, and StyLua.
+Standard types are `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `ci`, `build`, and `revert`.
 
-## Development Workflow
+Project-specific types:
 
-1. Create a branch for the change.
-2. Add or update tests for the behavior.
-3. Keep the public API small and documented.
-4. Run the checks before opening a pull request.
-5. Use a Conventional Commit message.
+| Type      | Purpose                         | In changelog? |
+| --------- | ------------------------------- | ------------- |
+| `chore`   | Miscellaneous maintenance tasks | No            |
+| `hotfix`  | Urgent bug fixes                | Yes           |
+| `release` | Release bookkeeping             | Yes           |
 
-Recommended checks:
+Examples:
 
-```sh
-busted --verbose
-luacheck plugin spec
-stylua --check plugin spec
-selene --display-style=quiet plugin
+```text
+fix(scope): handle nil value in lookup
+feat(scope): add a new option
+docs: update README usage section
+chore: bump stylua config
 ```
 
-## Design Guidelines
+### Branch creation
+
+Create a descriptive branch from `main`, prefixed with the commit type (`fix/`, `feat/`, `docs/`):
+
+```sh
+git switch -c feat/my-new-feature main
+```
+
+### Pull requests
+
+1. Push your branch to your fork.
+2. Open a pull request against `main` on [sravioli/warden.wz](https://github.com/sravioli/warden.wz).
+3. Describe the changes and reference any related issues.
+4. Make sure the checks from [Environment setup](#environment-setup) pass.
+5. A maintainer will review the PR. If you don't get feedback within a reasonable time, leave a comment to request a review.
+
+### Releases
+
+Releases are automated. When a maintainer bumps the version with `cog bump`, Cocogitto creates a SemVer tag and pushes it. A GitHub Actions workflow then generates a changelog and publishes a GitHub release. Contributors do not need to manage releases.
+
+### Text formats
+
+- Source code is written in Lua and formatted with StyLua.
+- Documentation (README, issue templates, contributing guide) is written in Markdown.
+
+## Project notes
+
+Warden does not aim to be a full Zod clone. Features such as async validation,
+codecs, JSON Schema export, or static type inference should start as a
+discussion before implementation.
+
+Design guidelines:
 
 - Prefer schema-owned defaults over separate default config tables.
 - Do not add config merge behavior; callers own merging.
@@ -56,28 +149,18 @@ selene --display-style=quiet plugin
 - Return precise issue paths such as `window.opacity`.
 - Keep logging dependency-free; injected loggers and WezTerm logging are enough.
 
-## Tests
-
-Tests should describe the user-facing behavior:
-
-- Required and optional fields.
-- Defaults applied to normalized output.
-- Unknown-key policies.
-- Nested object paths.
-- Declarative schemas compiled with `warden.compile`.
-- Result formatting and logging.
-- Assertion helper compatibility.
-
-When fixing a bug, add a regression test that fails without the fix.
-
-## Documentation
+Tests should describe user-facing behavior: required and optional fields,
+defaults, unknown-key policies, nested paths, declarative schemas compiled with
+`warden.compile`, result formatting and logging, and assertion helpers. Bug fixes
+need a regression test that fails without the fix.
 
 Update `.github/readme.md` whenever public API, defaults, or validation behavior
-changes. Examples should focus on plugin configuration because that is Warden's
-primary use case.
+changes. Examples should focus on plugin configuration.
 
-## License
+## Licensing
 
-By contributing, you agree that your code is licensed under the repository's
-code license and your documentation is licensed under the repository's
-documentation license.
+Code contributions are licensed under the [GNU General Public License v2](../LICENSE). Documentation contributions are licensed under [Creative Commons Attribution-NonCommercial 4.0 International](../LICENSE-DOCS).
+
+---
+
+> Template based on the [Contributing Guide template](https://thegooddocsproject.dev/) from The Good Docs Project.
