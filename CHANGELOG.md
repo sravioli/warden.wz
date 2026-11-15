@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [1.0.1](https://github.com/sravioli/warden.wz/compare/051e2679ff0a4613924a0e935e29dcd0e8e6aa7c..1.0.1) - 2026-11-15
+#### Performance Improvements
+- (**bootstrap**) reuse shared plugin snapshot - ([e08a8e3](https://github.com/sravioli/warden.wz/commit/e08a8e38b8157df09581afd089d9b3dde43692c2)) - sravioli
+#### Documentation
+- (**readme**) update plugin READMEs - ([051e267](https://github.com/sravioli/warden.wz/commit/051e2679ff0a4613924a0e935e29dcd0e8e6aa7c)) - sravioli
+
+- - -
+
 ## [1.0.0](https://github.com/sravioli/warden.wz/compare/a84ad41c73218b0cca69fb3a89669bf70dd1ebbd..1.0.0) - 2026-10-16
 #### Features
 - (**diagnostics**) enrich issue metadata - ([18e5b3b](https://github.com/sravioli/warden.wz/commit/18e5b3bdc0e5944662ac887fa8c05150c052469d)) - sravioli
