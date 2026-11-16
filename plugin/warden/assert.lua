@@ -1,10 +1,17 @@
 ---@module "warden.assert"
 
+---@class Warden.Assert
+---@field cmp  Warden.Assert.Cmp Comparisons.
+---@field nul  Warden.Assert.Nul Nil checks.
+---@field type Warden.Assert.Type Type checks.
+---@field tbl  Warden.Assert.Tbl Table assertions.
+---@field num  Warden.Assert.Num Number assertions.
+---@field str  Warden.Assert.Str String assertions.
 local M = {}
 M.__index = M
 
 ---@param config? table
----@return table
+---@return Warden.Assert
 function M.new(config)
   config = config or {}
 
@@ -242,6 +249,8 @@ function M:get_stats()
   return self._stats
 end
 
+---Comparisons, as `a.cmp:<name>(...)`.
+---@class Warden.Assert.Cmp
 M._cmp = {}
 
 function M._cmp:equal(actual, expected, message)
@@ -264,6 +273,8 @@ function M._cmp:falsy(value, message)
   return self._parent:_check(not value, message, 3, self._group)
 end
 
+---Nil checks, as `a.nul:<name>(...)`.
+---@class Warden.Assert.Nul
 M._nul = {}
 
 function M._nul:is_nil(value, message)
@@ -276,6 +287,8 @@ function M._nul:not_nil(value, message)
   return self._parent:_check(value ~= nil, message, 3, self._group)
 end
 
+---Type checks, as `a.type:<name>(...)`.
+---@class Warden.Assert.Type
 M._type = {}
 
 function M._type:is_type(value, expected_type, message)
@@ -284,6 +297,8 @@ function M._type:is_type(value, expected_type, message)
   return self._parent:_check(actual_type == expected_type, message, 3, self._group)
 end
 
+---Table assertions, as `a.tbl:<name>(...)`.
+---@class Warden.Assert.Tbl
 M._tbl = {}
 
 function M._tbl:has_key(tbl, key, message)
@@ -312,6 +327,8 @@ function M._tbl:has_keys(tbl, keys, message)
   return self
 end
 
+---Number assertions, as `a.num:<name>(...)`.
+---@class Warden.Assert.Num
 M._num = {}
 
 function M._num:in_range(value, min, max, message)
@@ -349,6 +366,8 @@ function M._num:negative(value, message)
   return self
 end
 
+---String assertions, as `a.str:<name>(...)`.
+---@class Warden.Assert.Str
 M._str = {}
 
 function M._str:matches(str, pattern, message)

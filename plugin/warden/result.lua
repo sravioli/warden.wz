@@ -2,14 +2,13 @@
 
 local logger = require "warden.logger"
 
-local M = {}
-M.__index = M
-
 ---@class Warden.Result
 ---@field ok boolean Whether validation passed without errors.
 ---@field value any Parsed value with defaults applied.
 ---@field issues Warden.Issue[] Validation errors.
 ---@field warnings Warden.Issue[] Non-fatal validation warnings.
+local M = {}
+M.__index = M
 local Result = M
 
 ---@param ok boolean
