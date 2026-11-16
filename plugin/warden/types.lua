@@ -3,6 +3,7 @@
 local issue = require "warden.issue"
 local schema = require "warden.schema"
 
+---@class Warden.Types
 local M = {}
 
 ---@param ctx Warden.Context

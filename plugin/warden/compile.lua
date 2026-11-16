@@ -2,6 +2,7 @@
 
 local types = require "warden.types"
 
+---@class Warden.Compile
 local M = {}
 
 ---@param spec table|Warden.Schema

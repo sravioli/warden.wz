@@ -4,9 +4,6 @@ local config = require "warden.config"
 local issue = require "warden.issue"
 local result = require "warden.result"
 
-local M = {}
-M.__index = M
-
 ---@class Warden.Context
 ---@field issues Warden.Issue[] Validation errors collected during parsing.
 ---@field warnings Warden.Issue[] Non-fatal validation warnings collected during parsing.
@@ -24,6 +21,8 @@ M.__index = M
 ---@field _refinements table[] Custom refinement checks.
 ---@field _object_rules table[] Object-level validation rules.
 ---@field _unknown string? Unknown-key handling mode for object schemas.
+local M = {}
+M.__index = M
 local Schema = M
 
 ---@param value any
