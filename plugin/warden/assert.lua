@@ -201,7 +201,7 @@ end
 
 ---@param value any
 ---@return string
-function M:_get_type(value)
+function M._get_type(_, value)
   -- `cache_type_checks` is still accepted, but `type()` needs no cache.
   return type(value)
 end
