@@ -513,14 +513,37 @@ function M:_parse(value, ctx, path, present)
   return parsed, #ctx.issues == start_issues
 end
 
----@param value any
----@param options? table
----@return Warden.Result
-function M:safe_parse(value, options)
-  if options and options.unknown ~= nil then
-    validate_unknown_mode(options.unknown)
+---Return `t` without the value at `path`. Only the tables along the path are
+---copied, so every other table keeps its identity and the input is untouched.
+---@param t any
+---@param path any[]
+---@param i? integer
+---@return any copy
+---@return boolean removed
+local function without(t, path, i)
+  i = i or 1
+  if type(t) ~= "table" or i > #path then
+    return t, false
   end
+  local key = path[i]
+  local child, removed = t[key], i == #path and t[key] ~= nil
+  if not removed and i < #path then
+    child, removed = without(t[key], path, i + 1)
+  elseif removed then
+    child = nil
+  end
+  if not removed then
+    return t, false
+  end
+  local copy = {}
+  for k, v in pairs(t) do
+    copy[k] = v
+  end
+  copy[key] = child
+  return copy, true
+end
 
+local function parse_once(self, value, options)
   local ctx = {
     issues = {},
     warnings = {},
@@ -529,6 +552,47 @@ function M:safe_parse(value, options)
 
   local parsed = self:_parse(value, ctx, {}, true)
   return result.new(#ctx.issues == 0, parsed, ctx.issues, ctx.warnings)
+end
+
+---Validate `value` without throwing.
+---
+---With `options.drop_invalid`, every value that fails is removed and the rest
+---parsed again, so one typo does not discard all options. `result.dropped`
+---lists the removed issues and `result.input` is the input without them.
+---@param value any
+---@param options? table
+---@return Warden.Result
+function M:safe_parse(value, options)
+  if options and options.unknown ~= nil then
+    validate_unknown_mode(options.unknown)
+  end
+
+  local parsed = parse_once(self, value, options)
+  if not (options and options.drop_invalid) then
+    return parsed
+  end
+
+  local dropped, input = {}, value
+  for _ = 1, 32 do
+    if parsed.ok then
+      break
+    end
+    local removed = false
+    for i = 1, #parsed.issues do
+      local item = parsed.issues[i]
+      local next_input, did = without(input, item.path)
+      if did then
+        input, removed = next_input, true
+        dropped[#dropped + 1] = item
+      end
+    end
+    if not removed then
+      break
+    end
+    parsed = parse_once(self, input, options)
+  end
+  parsed.dropped, parsed.input = dropped, input
+  return parsed
 end
 
 ---@param value any

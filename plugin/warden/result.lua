@@ -7,6 +7,8 @@ local logger = require "warden.logger"
 ---@field value any Parsed value with defaults applied.
 ---@field issues Warden.Issue[] Validation errors.
 ---@field warnings Warden.Issue[] Non-fatal validation warnings.
+---@field dropped Warden.Issue[] Issues whose values `drop_invalid` removed.
+---@field input any With `drop_invalid`: the input without the dropped values.
 local M = {}
 M.__index = M
 local Result = M
@@ -22,16 +24,21 @@ function M.new(ok, value, issues, warnings)
     value = value,
     issues = issues or {},
     warnings = warnings or {},
+    dropped = {},
   }, Result)
 end
 
 ---@return string
 function M:summary()
-  if self.ok and #self.warnings == 0 then
+  if self.ok and #self.warnings == 0 and #self.dropped == 0 then
     return "Warden validation passed"
   end
 
   local parts = {}
+
+  if #self.dropped > 0 then
+    parts[#parts + 1] = string.format("%d ignored value(s)", #self.dropped)
+  end
 
   if #self.issues > 0 then
     parts[#parts + 1] = string.format("%d error(s)", #self.issues)
@@ -83,6 +90,11 @@ end
 function M:format()
   local lines = { self:summary() }
 
+  for i = 1, #self.dropped do
+    local issue = self.dropped[i]
+    lines[#lines + 1] = string.format("- [ignored:%s] %s", issue.path_text, issue.message)
+  end
+
   for i = 1, #self.issues do
     local issue = self.issues[i]
     lines[#lines + 1] = string.format("- [%s] %s", issue.path_text, issue.message)
@@ -102,7 +114,7 @@ local function is_detailed_log(target)
 end
 
 local function log_detailed(self, target)
-  if #self.issues > 0 then
+  if #self.issues > 0 or #self.dropped > 0 then
     logger.emit("error", self:format(), target)
   elseif #self.warnings > 0 then
     logger.emit("warn", self:format(), target)
@@ -115,6 +127,14 @@ function M:log(target)
   if is_detailed_log(target) then
     log_detailed(self, target)
     return self
+  end
+
+  for i = 1, #self.dropped do
+    logger.emit(
+      "error",
+      string.format("[Warden] %s: %s (ignored)", self.dropped[i].path_text, self.dropped[i].message),
+      target
+    )
   end
 
   for i = 1, #self.issues do

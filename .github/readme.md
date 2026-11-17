@@ -125,6 +125,7 @@ result:log { detailed = true }
 | Option      | Type                                  | Default  | Description                                                                                                  |
 | ----------- | ------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------ |
 | `unknown`   | `"keep"\|"warn"\|"error"\|"strip"`    | `"warn"` | Parse option: keep silently, warn and keep, fail, or remove unknown object keys. A schema's `:unknown` wins. |
+| `drop_invalid` | `boolean`                          | `false`  | Parse option: remove each failing value and parse the rest again. `result.dropped` lists them; `result.input` is the cleaned input. |
 | `detailed`  | `boolean`                             | `false`  | `result:log` option: emit one expanded report instead of one compact line per issue.                         |
 | `error`     | `fun(message: string)`                | `nil`    | Error callback on the table passed directly to `result:log`. Called without `self`.                          |
 | `warn`      | `fun(message: string)`                | `nil`    | Warning callback on the same table. Called without `self`.                                                   |

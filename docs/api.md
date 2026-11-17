@@ -923,6 +923,12 @@ _Returns:_
 Warden.Schema:safe_parse(value: any, options?: table) -> Warden.Result
 ```
 
+Validate `value` without throwing.
+
+With `options.drop_invalid`, every value that fails is removed and the rest
+parsed again, so one typo does not discard all options. `result.dropped`
+lists the removed issues and `result.input` is the input without them.
+
 **Parameters:**
 
 - `value` (`any`)
@@ -972,6 +978,8 @@ Values:
 - `Warden.Result.value` (`any`): parsed value with defaults applied.
 - `Warden.Result.issues` (`Warden.Issue[]`): validation errors.
 - `Warden.Result.warnings` (`Warden.Issue[]`): non-fatal validation warnings.
+- `Warden.Result.dropped` (`Warden.Issue[]`): issues whose values `drop_invalid` removed.
+- `Warden.Result.input` (`any`): with `drop_invalid`: the input without the dropped values.
 
 ### Warden.Result.new
 
