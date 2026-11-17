@@ -39,15 +39,13 @@ local function apply_modifiers(schema, spec)
     schema:unknown(spec.unknown)
   end
 
-  if spec.min ~= nil and spec.max ~= nil then
-    schema:range(spec.min, spec.max)
-  else
-    if spec.min ~= nil then
-      schema:min(spec.min)
-    end
-    if spec.max ~= nil then
-      schema:max(spec.max)
-    end
+  -- min/max measure strings and tables by length; range() would compare the
+  -- value itself and reject every string.
+  if spec.min ~= nil then
+    schema:min(spec.min)
+  end
+  if spec.max ~= nil then
+    schema:max(spec.max)
   end
 
   if spec.pattern then

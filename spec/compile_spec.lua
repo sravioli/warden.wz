@@ -56,6 +56,14 @@ describe("warden.compile", function()
     assert.is_false(ranged:safe_parse(5).ok)
     assert.is_false(warden.compile({ type = "number", min = 2 }):safe_parse(1).ok)
     assert.is_false(warden.compile({ type = "number", max = 2 }):safe_parse(3).ok)
+    -- Both limits on a string or array measure its length.
+    local name = warden.compile { type = "string", min = 1, max = 5 }
+    assert.is_true(name:safe_parse("hello").ok)
+    assert.is_false(name:safe_parse("").ok)
+    assert.is_false(name:safe_parse("too long").ok)
+    local list = warden.compile { type = "array", min = 1, max = 2 }
+    assert.is_true(list:safe_parse({ 1 }).ok)
+    assert.is_false(list:safe_parse({ 1, 2, 3 }).ok)
 
     local pattern = warden.compile { type = "string", pattern = "^a" }
     assert.is_false(pattern:safe_parse("b").ok)
