@@ -144,7 +144,7 @@ Pass these to `warden.assert.new`. They do not configure schemas.
 | `silent`              | `boolean`                                  | `false`                  | Collect failures without invoking the handler. Callbacks/logging still run.   |
 | `strict_mode`         | `boolean`                                  | `false`                  | Raise immediately, before accumulation. `silent` takes precedence.            |
 | `lazy_eval`           | `boolean`                                  | `false`                  | After a failure, skip further bookkeeping and error handling.                 |
-| `cache_type_checks`   | `boolean`                                  | `false`                  | Cache type-name lookups.                                                      |
+| `cache_type_checks`   | `boolean`                                  | `false`                  | Accepted for compatibility. Has no effect.                                    |
 | `prefix`              | `string?`                                  | `nil`                    | Prefix error messages.                                                        |
 | `context`             | `string\|string[]?`                        | `nil`                    | Prepend context to messages.                                                  |
 | `group_errors`        | `boolean`                                  | `false`                  | Prefix the assertion group name.                                              |

@@ -21,7 +21,6 @@ function M.new(config)
   self._accumulate = config.accumulate or false
   self._fail_fast = config.fail_fast or false
   self._has_failed = false
-  self._type_cache = config.cache_type_checks and {} or nil
   self._stats = config.metrics
       and {
         total = 0,
@@ -203,16 +202,8 @@ end
 ---@param value any
 ---@return string
 function M:_get_type(value)
-  if not self._type_cache then
-    return type(value)
-  end
-
-  local value_type = type(value)
-  if not self._type_cache[value_type] then
-    self._type_cache[value_type] = value_type
-  end
-
-  return self._type_cache[value_type]
+  -- `cache_type_checks` is still accepted, but `type()` needs no cache.
+  return type(value)
 end
 
 function M:throw()
